@@ -1,6 +1,6 @@
 " buffoptions.vim  : Per-Buffer options/maps/menus
 " Author: Michael Geddes<michaelrgeddes@optushome.com.au>
-" Version: 2.0
+" Version: 2.1
 
 
 " Push options onto a stack - this sets the new value and remembers the old values
@@ -291,7 +291,8 @@ fun! ReadFileTypeMap(types, filename)
   endif
 
   if !cached
-	call system("vim ".filename." -R -e -n -u ".g:path_for_buffoptions."/buffoptions_mac.vim -c \"call DoIt('".group."','".a:types."','".cache_file."')\"") 
+	call system("vim ".filename." -R -e -n -u ".g:path_for_buffoptions."/buffoptions_mac.vim -c \"call DoIt('".group."','".a:types."','".cache_file."',',')\"") 
+"	exe ("!vim ".filename." -R -e -n -u ".g:path_for_buffoptions."/buffoptions_mac.vim -c \"call DoIt('".group."','".a:types."','".cache_file."',',')\"") 
   endif
   let erm=v:errmsg
   let v:errmsg=''
@@ -344,12 +345,13 @@ com! -complete=file -nargs=1 SOURCE call ReadFileTypeMap( "", <q-args> )
 if 0
 " buffoptions_mac.vim
 "--------------8<-------------------------------
-fun DoIt(group,types,tfilename)
+fun DoIt(group,types,tfilename,leader)
   set noro
   let filetypes=a:types
   let typex='^\s*"\s*FileTypes\=\s*:\s*\(.*\)\s*$'
-  g /^\s*\(\([onvica]*\(map\|menu\)\>\)\|"\s*FileTypes\=\s*:\)/ if getline('.')=~typex |let filetypes=substitute(getline('.'),typex,'\1','') | else | if filetypes != ''| exe 's/["\\]/\\&/g | s/^.*$/call FileType__ExeLine("'.a:group.'",'."'".escape(expand('%:p:gs?\\?/?'),'/\&.*')."'".','.line('.').',"'.filetypes.'","&")/'|endif |endif
-  
+  g /^\s*\(\([onvica]*\(map\|menu\)\>\)\|"\s*FileTypes\=\s*:\)/ if getline('.')=~typex |let filetypes=substitute(getline('.'),typex,'\1','') | else | if filetypes != ''| exe 's/["\\]/\\&/ge | s/<\(SID\|unique\|script\|buffer\)>//ge|s/<\(Plug\|Leader\)>/'.a:leader.'/ge|s/^.*$/call FileType__ExeLine("'.a:group.'",'."'".escape(expand('%:p:gs?\\?/?'),'/\&.*')."'".','.line('.').',"'.filetypes.'","&")/'|endif |endif
+  " %s/^\(fu\(n\(c\(t\(i\(on\=\)\=\)\=\)\=\)\=\)\=!\=\)\s\+s:/\1/e
+  %s/\<s:\(\k\)/\1/ge
   exe 'w '.a:tfilename
   q!
 endfun
