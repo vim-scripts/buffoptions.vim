@@ -1,0 +1,74 @@
+This is a mirror of http://www.vim.org/scripts/script.php?script_id=9
+
+BuffOptions.vim - Per-buffer options and mappings
+Introduction:
+Some of Vim's options are set per-buffer, but not all. This extension allows you to set any options and also mappings for a particular buffer or filetype.
+
+The idea is that you push options onto a stack (the old values are in fact what are pushed) with PushOption( ... ) and then restore the values with RestoreOptions(). 
+
+An extension to the filetypes allow easy use of these macros for a specific filetype. The autocommands filetypeEnter and filetypeLeave have been added.
+
+Base Commands:
+PushOption( option1|map1|menu1|abbrev1, value1, ...) - Push any number option/value pairs where: 
+optionn is a vim 'option' name. 
+mapn is a map of the form '{n|v|o|i|c}map <lhs>' defining what kind of map is being defined (mandatory with multiple allowed) 
+abbrevn is an insert mode abbreviation - the abbreviation is set by push and deleted by RestoreOptions() (as it is not possible to silently check for original abbreviations). 
+menun is a menu setting of the form '{a|n|v|o|i|c}menu <lhs>' defining where the menu is available. <lhs> can include the position of the menu (eg '100.100 Tools.Test') 
+valuen is the value or mapping to set. 
+RestoreOptions() - Restore all options to their previous value 
+autocomd User filetypeEnter - Called on 'BufEnter' of a file of filetype. 
+autocomd User filetypeLeave - Called on 'BufLeave' of a file of filetype. 
+ReadFileTypeMap(types, filename) - Source filename with per-buffer map/menu options defaulting to the specified list offiletypes. Lines of the form: 
+" FileTypes: cpp
+Example:
+
+aug specialEdit
+au!
+au User sgmlEnter call PushOptions("keywordprg","/bin/htmlkey")
+au User cEnter call PushOptions("breakat",". )&|",  "complete",".,k/usr/dict,]",  "nmap <c-enter>","<esc>o")
+au User cEnter call PushOptions("amenu 10.100 Tools.Compile\\ C",":make<cr>" )
+
+au User sgmlLeave,cLeave  call RestoreOptions()
+aug END
+
+
+Per File mappings
+This is not really recommended, as it gives the document virus a foot in... so be warned.
+
+GetOptionsFromFile(comment) is a little trick to allow mappings defined for a particular file within the file. The lines recognized are of the form:
+
+<comment>vimexe: <arguments>
+
+where the arguments are the same as for PushOption. And Comment is passed as an argument.
+
+Despite the given example, I would recomend that you map a key to parse the options from a file initially.
+
+Note that the options are cached, so once read, you would have to unlet b:VIMEXE to be able to get it to reparse.
+
+
+aug MyOpts
+au!
+au User vimEnter call GetOptionsFromFile('"')
+au User vimLeave call RestoreOptions() 
+aug END
+
+Mappings from filetype files
+For when you have a file that is used for the mappings for a particular filetype.
+All lines in the file except those starting with map and menu will get executed. Any maps/menus will get inserted into a BuffOption() for the specified filetype 
+
+Commands:
+FTExe(Filetypes, command) - Have mapping/menu command executed as a per-buffer option for the specified (comma separated) filetypes 
+ReadFileTypeMap(filetypes,filename) - Sets all map/menu entries existing in filename to be specific to the filetypes specified and executes all other lines. Comment lines of the form: 
+"FileTypes: cpp,c,rc,idl
+
+will cause the following maps/menus to be for the specified filetypes. A blank filetype string causes the maps/menus to be executed immediately.
+
+This implementation requires the existance of buffoptions_mac.vim in the same directory as buffoptions.vim
+The source code for that is in an if 0 block at the bottom of buffoptions.vim
+
+:SO filename - Call ReadFileTypeMap with blank original filetypes. 
+Example:
+let filename =$home.'/vim/txtsettings.vim'
+call ReadFileTypeMap('txt',filename)
+SO ~/vim/txtsettings.vim
+
